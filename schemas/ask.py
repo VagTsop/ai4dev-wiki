@@ -1,4 +1,4 @@
-"""Τα σχήματα εισόδου και εξόδου του /ask."""
+"""Request and response schemas for the /ask endpoint."""
 from pydantic import BaseModel, Field
 
 
@@ -6,11 +6,11 @@ class AskRequest(BaseModel):
     question: str = Field(
         min_length=1,
         max_length=2000,
-        description="Η ερώτηση προς το μοντέλο",
+        description="The question to send to the model",
     )
     model: str | None = Field(
         default=None,
-        description="Παράκαμψη του προεπιλεγμένου μοντέλου, π.χ. ollama_chat/llama3.2:1b",
+        description="Override the default model, e.g. ollama_chat/llama3.2:1b",
     )
 
 

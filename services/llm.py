@@ -1,4 +1,4 @@
-"""Η επικοινωνία με το μοντέλο, μαζί με μετρικές χρόνου και κόστους."""
+"""Model calls, with timing and cost metrics. Knows nothing about HTTP."""
 import os
 import time
 
@@ -12,7 +12,7 @@ DEFAULT_MODEL = os.getenv("MODEL", "anthropic/claude-haiku-5-5")
 
 
 class LLMError(Exception):
-    """Σφάλμα κατά την κλήση του μοντέλου, με κωδικό HTTP για τον router."""
+    """A failed model call, carrying the HTTP status the router should return."""
 
     def __init__(self, message: str, status_code: int = 502):
         super().__init__(message)
@@ -21,7 +21,7 @@ class LLMError(Exception):
 
 
 async def ask_model(question: str, model: str | None = None) -> dict:
-    """Στέλνει μία ερώτηση και επιστρέφει την απάντηση με τις μετρικές της."""
+    """Send a single question and return the answer along with its metrics."""
     model = model or DEFAULT_MODEL
     messages = [{"role": "user", "content": question}]
 
@@ -33,19 +33,20 @@ async def ask_model(question: str, model: str | None = None) -> dict:
             num_retries=2,
         )
     except litellm.AuthenticationError:
-        raise LLMError(f"Μη έγκυρο ή απόν κλειδί API για το «{model}».", 401)
+        raise LLMError(f"Missing or invalid API key for '{model}'.", 401)
     except litellm.RateLimitError:
-        raise LLMError("Υπέρβαση ορίου αιτημάτων. Δοκιμάστε ξανά σε λίγο.", 429)
+        raise LLMError("Rate limit exceeded. Please try again shortly.", 429)
     except litellm.APIConnectionError:
-        raise LLMError(f"Αδύνατη η σύνδεση με τον πάροχο του «{model}».", 503)
+        raise LLMError(f"Could not reach the provider for '{model}'.", 503)
     except litellm.APIError as exc:
-        raise LLMError(f"Σφάλμα από τον πάροχο: {exc}", 502)
+        raise LLMError(f"Provider error: {exc}", 502)
     seconds = time.perf_counter() - start
 
     usage = response.usage
     try:
         cost = litellm.completion_cost(completion_response=response)
     except Exception:
+        # The model is missing from the LiteLLM cost map, so we cannot price it.
         cost = 0.0
 
     return {

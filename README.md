@@ -12,6 +12,8 @@ and reports what every call cost.
 
 | Endpoint | What it does |
 |---|---|
+| `GET /api/v1/health` | Which keys are configured, whether Ollama is up, what can be priced |
+| `GET /api/v1/health?probe=true` | The same, after calling every model once to prove it answers |
 | `POST /api/v1/ask` | One question, one answer, with tokens, cost and latency |
 | `POST /api/v1/ask/stream` | The same, streamed token by token over server-sent events |
 | `POST /api/v1/chat` | A conversation that remembers, with an optional system prompt |
@@ -86,6 +88,12 @@ A few things that are easy to miss and cost real time:
   `temperature` other than 1, which the cost map flags as `supports_sampling_params`.
 - Greek text costs roughly four times the tokens of the equivalent English: the
   same question measured 8 tokens in English and 32 in Greek.
+- A failed probe is still informative. A provider answering 401 proves the route
+  is wired and only the key is missing, which is different from a provider that
+  cannot be reached at all.
+- `LITELLM_LOCAL_MODEL_COST_MAP=False` matters more than it looks: the price map
+  fetched at startup knew 7190 models, against 4256 in the copy shipped with the
+  installed version.
 
 ## Roadmap
 
@@ -94,6 +102,7 @@ A few things that are easy to miss and cost real time:
 - [x] Conversations with history and a system prompt
 - [x] Streaming responses
 - [x] Model catalogue and token measurement
+- [x] Environment and provider health checks
 - [ ] Prompt engineering: few-shot examples, structured output
 - [ ] Reliability: timeouts, rate limits, spending caps
 - [ ] RAG over the course slides and repositories

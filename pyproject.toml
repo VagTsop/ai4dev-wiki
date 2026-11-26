@@ -1,0 +1,11 @@
+[project]
+name = "ai4dev-wiki"
+version = "0.1.0"
+description = "Βοηθός Q&A πάνω στο υλικό του σεμιναρίου AI for Developers"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi[standard]>=0.165.0",
+    "litellm>=1.111.0",
+    "python-dotenv>=1.2.4",
+]

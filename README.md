@@ -1,17 +1,18 @@
 # ai4dev-wiki
 
-Βοηθός Q&A πάνω στο υλικό του σεμιναρίου **AI for Developers** (Οικονομικό Πανεπιστήμιο Αθηνών).
+A Q&A assistant over the material of the **AI for Developers** programme
+(Athens University of Economics and Business).
 
-Χτίζεται σταδιακά, ενότητα προς ενότητα του προγράμματος.
+Built incrementally, one module of the curriculum at a time.
 
-## Τι κάνει σήμερα
+## What it does today
 
-Υπηρεσία FastAPI που στέλνει μια ερώτηση σε οποιοδήποτε LLM — τοπικό ή cloud — και
-επιστρέφει την απάντηση μαζί με **tokens, κόστος και χρόνο**.
+A FastAPI service that sends a question to any LLM — local or cloud — and returns
+the answer together with **token usage, cost and latency**.
 
 ```http
 POST /api/v1/ask
-{ "question": "Ποια είναι η πρωτεύουσα της Κρήτης;", "model": "ollama_chat/llama3.2:1b" }
+{ "question": "What is the capital of Crete?", "model": "ollama_chat/llama3.2:1b" }
 ```
 
 ```json
@@ -25,36 +26,41 @@ POST /api/v1/ask
 }
 ```
 
-Το πεδίο `model` είναι προαιρετικό· χωρίς αυτό χρησιμοποιείται το `MODEL` του `.env`.
+The `model` field is optional; when omitted, the `MODEL` entry from `.env` is used.
+Switching between a cloud provider and a model running on your own machine is a
+one-string change — everything else stays the same.
 
-## Εγκατάσταση
+## Getting started
 
 ```bash
 uv sync
-copy .env.example .env     # και συμπληρώστε το κλειδί σας
+cp .env.example .env     # then fill in your API key
 uv run fastapi dev main.py
 ```
 
-Διαδραστική τεκμηρίωση: <http://localhost:8000/docs>
+Interactive docs: <http://localhost:8000/docs>
 
-## Δομή
+## Layout
 
 ```
-main.py           η εφαρμογή FastAPI
-routers/          τα endpoints
-schemas/          μοντέλα Pydantic για είσοδο και έξοδο
-services/         επικοινωνία με τα μοντέλα, χωρίς γνώση HTTP
+main.py           the FastAPI application
+routers/          HTTP endpoints
+schemas/          Pydantic models for requests and responses
+services/         model calls and metrics, with no knowledge of HTTP
 ```
 
-## Πορεία
+The separation matters: `services/` never imports FastAPI, so the same code can be
+driven from a CLI, a scheduled job or a test.
 
-- [x] Υπηρεσία με ένα endpoint, εναλλαγή μοντέλων, μέτρηση κόστους
-- [ ] Σύγκριση πολλών μοντέλων παράλληλα
-- [ ] Prompt engineering: system prompt, few-shot, δομημένη έξοδος
-- [ ] Διαχείριση κατάστασης, timeouts, rate limits
-- [ ] RAG πάνω στις διαφάνειες και τα repo του μαθήματος
-- [ ] Agent με εργαλεία αναζήτησης και εκτέλεσης κώδικα
+## Roadmap
 
-## Τεχνολογίες
+- [x] Service with a single endpoint, model switching, cost accounting
+- [ ] Side-by-side comparison of several models, run concurrently
+- [ ] Prompt engineering: system prompts, few-shot examples, structured output
+- [ ] State management, timeouts, rate limits
+- [ ] RAG over the course slides and repositories
+- [ ] Agent with search and code-execution tools
+
+## Built with
 
 uv · FastAPI · Pydantic · LiteLLM · Ollama

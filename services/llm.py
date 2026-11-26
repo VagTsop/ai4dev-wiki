@@ -1,4 +1,5 @@
 """Model calls, with timing and cost metrics. Knows nothing about HTTP."""
+import asyncio
 import os
 import time
 
@@ -9,6 +10,11 @@ load_dotenv()
 import litellm
 
 DEFAULT_MODEL = os.getenv("MODEL", "anthropic/claude-haiku-5-5")
+COMPARE_MODELS = [
+    name.strip()
+    for name in os.getenv("COMPARE_MODELS", DEFAULT_MODEL).split(",")
+    if name.strip()
+]
 
 
 class LLMError(Exception):
@@ -56,4 +62,38 @@ async def ask_model(question: str, model: str | None = None) -> dict:
         "tokens_out": usage.completion_tokens,
         "cost_usd": round(cost, 8),
         "seconds": round(seconds, 2),
+    }
+
+
+async def compare_models(question: str, models: list[str] | None = None) -> dict:
+    """Ask several models the same question at the same time.
+
+    Every model is started before any of them is awaited, so the comparison takes
+    as long as the slowest model rather than the sum of all of them. A model that
+    fails does not cancel the rest: its entry carries an ``error`` instead of an
+    answer.
+    """
+    models = models or COMPARE_MODELS
+
+    start = time.perf_counter()
+    outcomes = await asyncio.gather(
+        *(ask_model(question, name) for name in models),
+        return_exceptions=True,
+    )
+    seconds_total = time.perf_counter() - start
+
+    results = []
+    for name, outcome in zip(models, outcomes):
+        if isinstance(outcome, LLMError):
+            results.append({"model": name, "error": outcome.message})
+        elif isinstance(outcome, BaseException):
+            results.append({"model": name, "error": f"Unexpected error: {outcome}"})
+        else:
+            results.append(outcome)
+
+    return {
+        "question": question,
+        "seconds_total": round(seconds_total, 2),
+        "cost_total_usd": round(sum(r.get("cost_usd", 0.0) for r in results), 8),
+        "results": results,
     }

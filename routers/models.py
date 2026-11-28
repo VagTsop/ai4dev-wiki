@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Path, Query, status
 
+from dependencies.pagination import PaginationDep
 from schemas.models import ModelInfo, ModelsResponse
 from services.llm import describe_model, list_models
 
@@ -16,9 +17,10 @@ router = APIRouter(tags=["models"])
                 "locally, with prices read from the LiteLLM cost map.",
     response_model=ModelsResponse,
     status_code=status.HTTP_200_OK,
-    response_description="The models this service can call",
+    response_description="One page of the models this service can call",
 )
 async def get_models(
+    pagination: PaginationDep,
     provider: Annotated[
         str | None,
         Query(
@@ -29,7 +31,13 @@ async def get_models(
     ] = None,
 ) -> ModelsResponse:
     models = await list_models(provider)
-    return ModelsResponse(count=len(models), models=models)
+    skip, limit = pagination["skip"], pagination["limit"]
+    return ModelsResponse(
+        count=len(models),
+        skip=skip,
+        limit=limit,
+        models=models[skip : skip + limit],
+    )
 
 
 @router.get(

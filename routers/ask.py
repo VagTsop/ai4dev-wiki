@@ -1,7 +1,7 @@
 """Endpoints for a single question to an LLM."""
 import json
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 from fastapi.responses import StreamingResponse
 
 from schemas.ask import AskRequest, AskResponse
@@ -23,15 +23,14 @@ router = APIRouter(
     response_description="The model's answer with its metrics",
 )
 async def ask(payload: AskRequest) -> AskResponse:
-    try:
-        result = await ask_model(
-            payload.question,
-            payload.model,
-            payload.temperature,
-            payload.max_tokens,
-        )
-    except LLMError as exc:
-        raise HTTPException(status_code=exc.status_code, detail=exc.message)
+    # An LLMError raised below becomes an HTTP response through the handler
+    # registered in exception_handlers.py, so there is nothing to catch here.
+    result = await ask_model(
+        payload.question,
+        payload.model,
+        payload.temperature,
+        payload.max_tokens,
+    )
     return AskResponse(**result)
 
 
@@ -45,8 +44,9 @@ async def ask(payload: AskRequest) -> AskResponse:
 )
 async def ask_stream(payload: AskRequest) -> StreamingResponse:
     async def events():
-        # Once the response has started there is no way back to an HTTP status
-        # code, so a failure has to travel inside the stream itself.
+        # This one still catches. Once the response has started, the status code
+        # is already on the wire, so the exception handler has nothing left to
+        # set and a failure has to travel inside the stream itself.
         try:
             async for event in stream_model(
                 payload.question,

@@ -53,11 +53,13 @@ async def chat(payload: ChatRequest) -> ChatResponse:
             payload.temperature,
             payload.max_tokens,
         )
-    except LLMError as exc:
-        # Drop the question that never got an answer, so the history stays a
-        # clean alternation of user and assistant turns.
+    except LLMError:
+        # This endpoint still catches, because it has cleaning up to do: drop the
+        # question that never got an answer, so the history stays a clean
+        # alternation of user and assistant turns. Translating the error into a
+        # response is not our job, so it is re-raised for the handler.
         conversation.messages.pop()
-        raise HTTPException(status_code=exc.status_code, detail=exc.message)
+        raise
 
     conversation.messages.append({"role": "assistant", "content": result["answer"]})
     conversation.cost_total_usd = round(

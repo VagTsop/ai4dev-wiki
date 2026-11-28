@@ -1,8 +1,8 @@
 """Endpoint that measures text in tokens before anything is sent."""
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 
 from schemas.tokens import TokensRequest, TokensResponse
-from services.llm import LLMError, count_tokens
+from services.llm import count_tokens
 
 router = APIRouter(tags=["tokens"])
 
@@ -18,8 +18,4 @@ router = APIRouter(tags=["tokens"])
     response_description="Token count, character count and the resulting input cost",
 )
 async def tokens(payload: TokensRequest) -> TokensResponse:
-    try:
-        result = count_tokens(payload.text, payload.model)
-    except LLMError as exc:
-        raise HTTPException(status_code=exc.status_code, detail=exc.message)
-    return TokensResponse(**result)
+    return TokensResponse(**count_tokens(payload.text, payload.model))

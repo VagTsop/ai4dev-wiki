@@ -18,5 +18,7 @@ class ModelInfo(BaseModel):
 
 
 class ModelsResponse(BaseModel):
-    count: int
-    models: list[ModelInfo]
+    count: int = Field(description="How many models match, before paging")
+    skip: int
+    limit: int
+    models: list[ModelInfo] = Field(description="The requested page")
